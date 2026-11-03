@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Apply mobile interface update
-        run: python3 scripts/apply-mobile-design-build27.py
+        run: python3 scripts/apply-mobile-design-build28.py
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -33,9 +33,14 @@ jobs:
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Build APK
         run: gradle --no-daemon assembleDebug
+      - name: Verify APK output
+        run: |
+          test -n "$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)"
+          ls -lh app/build/outputs/apk/debug/*.apk
+          sha256sum app/build/outputs/apk/debug/*.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Tringo-Android-APK-V1.0.1-Build27
+          name: Tringo-Android-APK-V1.0.1-Build28
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
