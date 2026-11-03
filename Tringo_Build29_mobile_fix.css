@@ -1,0 +1,29 @@
+/* Tringo Android Build 29 – Samsung Galaxy A32 responsive correction */
+@media screen and (max-width: 900px) {
+  *, *::before, *::after { box-sizing: border-box !important; }
+  html, body { width: 100% !important; max-width: 100% !important; min-width: 0 !important; overflow-x: clip !important; }
+  body { margin: 0 !important; }
+  .app { width: 100% !important; max-width: 100% !important; min-width: 0 !important; }
+  .content, .center, .chat, .composer, .chat > *, .msg, .bubble, .result, .result-card {
+    min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important;
+  }
+  .center { width: 100% !important; overflow: hidden !important; }
+  .chat { width: 100% !important; padding-left: clamp(8px, 2.5vw, 13px) !important; padding-right: clamp(8px, 2.5vw, 13px) !important; }
+  .msg { display: flex !important; align-items: flex-start !important; width: 100% !important; gap: 7px !important; }
+  .msg > .bubble { flex: 0 1 auto !important; width: auto !important; max-width: calc(100% - 46px) !important; min-width: 0 !important; white-space: pre-wrap !important; overflow-wrap: anywhere !important; word-break: normal !important; }
+  .msg.user { justify-content: flex-end !important; }
+  .msg.user > .bubble { max-width: 94% !important; }
+  .bubble, .bubble * { min-width: 0 !important; max-width: 100% !important; overflow-wrap: anywhere !important; }
+  .result, .result-card { width: 100% !important; overflow-wrap: anywhere !important; }
+  .result-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .original, .bosnian, .solution { white-space: pre-wrap !important; overflow-wrap: anywhere !important; word-break: normal !important; }
+  .composer, .composer form { width: 100% !important; max-width: 100% !important; }
+  .input { width: 100% !important; min-width: 0 !important; }
+  img, svg, video, canvas { max-width: 100% !important; }
+}
+@media screen and (max-width: 900px) and (orientation: landscape) {
+  .app { grid-template-rows: 54px minmax(0,1fr) 58px !important; }
+  .mobile-hero { display: none !important; }
+  .center { min-height: 0 !important; }
+  .chat { padding-top: 5px !important; }
+}
