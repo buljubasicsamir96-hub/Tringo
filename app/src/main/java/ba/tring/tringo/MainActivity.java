@@ -3,10 +3,12 @@ package ba.tring.tringo;
 import android.Manifest;
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Build;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
@@ -34,37 +36,55 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
 
-        // Android 15 / targetSdk 35: draw edge-to-edge, then explicitly inset
-        // the WebView so app content never occupies the system-bar areas.
+        // Draw behind Android system bars, but reserve their exact inset areas
+        // for the OS. The HTML interface itself is deliberately left unchanged.
         Window window = getWindow();
         WindowCompat.setDecorFitsSystemWindows(window, false);
-        window.setStatusBarColor(android.graphics.Color.TRANSPARENT);
-        window.setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        WindowCompat.getInsetsController(window, window.getDecorView())
-                .setAppearanceLightStatusBars(false);
-        WindowCompat.getInsetsController(window, window.getDecorView())
-                .setAppearanceLightNavigationBars(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+        androidx.core.view.WindowInsetsControllerCompat barsController =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        barsController.setAppearanceLightStatusBars(false);
+        barsController.setAppearanceLightNavigationBars(false);
 
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(android.graphics.Color.rgb(6, 63, 144));
+        root.setFitsSystemWindows(false);
+        root.setClipToPadding(true);
+        // The two visible safe-area strips match the app's blue header and footer.
+        root.setBackground(new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{Color.rgb(6, 63, 144), Color.rgb(6, 35, 75)}));
 
         webView = new WebView(this);
-        webView.setBackgroundColor(android.graphics.Color.WHITE);
+        webView.setBackgroundColor(Color.WHITE);
         root.addView(webView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
-            Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
+            Insets safe = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars()
+                    | WindowInsetsCompat.Type.navigationBars()
                     | WindowInsetsCompat.Type.displayCutout());
             Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
 
-            // Keep the top/status and side/cutout safe areas. At the bottom,
-            // use whichever is larger: navigation bar or visible keyboard.
-            int bottomInset = Math.max(bars.bottom, ime.bottom);
-            view.setPadding(bars.left, bars.top, bars.right, bottomInset);
-            return windowInsets;
+            // Top/status and bottom/navigation controls are kept outside the
+            // WebView. When the keyboard opens, reserve the larger bottom inset.
+            int bottom = Math.max(safe.bottom, ime.bottom);
+            view.setPadding(safe.left, safe.top, safe.right, bottom);
+
+            // The root has already applied system-bar/cutout insets; do not let
+            // WebView apply them a second time. Preserve IME insets for resizing.
+            return new WindowInsetsCompat.Builder(windowInsets)
+                    .setInsets(WindowInsetsCompat.Type.statusBars()
+                            | WindowInsetsCompat.Type.navigationBars()
+                            | WindowInsetsCompat.Type.displayCutout(), Insets.NONE)
+                    .build();
         });
 
         setContentView(root);
