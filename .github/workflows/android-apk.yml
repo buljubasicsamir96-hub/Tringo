@@ -22,9 +22,9 @@ jobs:
           java = Path("app/src/main/java/ba/tring/tringo/MainActivity.java").read_text(encoding="utf-8")
           assert 'tringo-android-build32-viewport-fix' in html
           assert 'Tringo Mobile' not in html or 'mobile-bottom-nav' in html
-          assert 'WindowInsetsCompat.Type.systemBars()' in java
+          assert 'WindowInsetsCompat.Type.statusBars()
           assert 'WindowInsetsCompat.Type.ime()' in java
-          assert 'view.setPadding(bars.left, bars.top, bars.right, bottomInset)' in java
+          assert assert 'view.setPadding(safe.left, safe.top, safe.right, bottom)' in java 
           assert 'tringoRunManualSearch' in html
           nav = html.split('class="mobile-bottom-nav"', 1)[1].split('</nav>', 1)[0]
           assert nav.count('<button') == 5, "Expected exactly 5 approved bottom navigation items"
