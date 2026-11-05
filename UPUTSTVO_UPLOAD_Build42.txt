@@ -1,0 +1,40 @@
+TRINGO ANDROID — PAKET ZA AŽURIRANJE GITHUB WORKFLOW-A
+
+SADRŽAJ PAKETA
+1. .github/workflows/android-apk.yml
+   Ispravljena GitHub Actions procedura:
+   - radi na granama main i Tringo2;
+   - provjerava Build42 HTML i Android Java kod;
+   - izvršava Gradle clean assembleDebug;
+   - nakon builda otvara APK kao ZIP i poredi SHA256 ugrađenog
+     app/src/main/assets/Tringo.html sa izvornom datotekom;
+   - objavljuje APK kao GitHub Actions artifact.
+
+2. app/build.gradle
+   Konfiguracija Android aplikacije (versionCode 28, versionName 1.0.1).
+
+VAŽNO — HTML ASSET
+Build42 HTML se već nalazi u repozitoriju na putanji:
+app/src/main/assets/Tringo.html
+
+Ovaj paket ga ne prepisuje drugim/neprovjerenim HTML-om. Prije pokretanja
+workflow-a provjerite da je na toj putanji zaista željeni Build42 HTML.
+Workflow će zaustaviti build ako nedostaju očekivani Build42 elementi.
+
+KAKO POSTAVITI
+1. Raspakujte ZIP na računaru.
+2. U GitHub repozitoriju otvorite granu Tringo2.
+3. Dodajte/prepišite fajl:
+   .github/workflows/android-apk.yml
+4. Provjerite da app/build.gradle odgovara priloženom fajlu.
+5. Sačuvajte izmjene (commit).
+6. Otvorite GitHub Actions i pokrenite:
+   Build Tringo Android APK - Build42
+7. Sačekajte da sve provjere budu zelene.
+8. U uspješnom workflow run-u preuzmite artifact:
+   Tringo-Android-V1.0.1-Build42
+
+NAPOMENA
+Ovo je paket izvornih konfiguracijskih fajlova, nije APK.
+APK se generiše na GitHub Actions serveru. Ako Build42 provjera ne prođe,
+nemojte instalirati rezultat; pošaljite mi log greške.

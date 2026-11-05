@@ -1,9 +1,11 @@
-name: Build Tringo Android APK
+name: Build Tringo Android APK - Build42
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
+      - Tringo2
 
 permissions:
   contents: read
@@ -12,11 +14,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify Build42 HTML, search UI and Android safe area
+      - name: Verify the exact Android source files
+        shell: bash
         run: |
+          set -euo pipefail
+          test -f app/src/main/assets/Tringo.html
+          test -f app/src/main/java/ba/tring/tringo/MainActivity.java
+          test -f app/build.gradle
+
           python3 - <<'PY'
           from pathlib import Path
           import re, subprocess, tempfile
@@ -36,45 +44,49 @@ jobs:
               'viewport-fit=cover',
               'tringoRunManualSearch',
           ]
-          for item in required:
-              assert item in html, f"Missing Build42 requirement: {item}"
-
-          assert 'class="smartbar"' not in html, "Old search filter toolbar is still present"
-          assert 'class="suggestions"' not in html, "Preset example chips are still present"
-          assert 'data-q=' not in html, "Preset query chips are still present"
-
-          nav_marker = '<nav aria-label="Glavni meni" class="mobile-bottom-nav">'
-          assert nav_marker in html, "Mobile navigation is missing"
-          nav = html.split(nav_marker, 1)[1].split('</nav>', 1)[0]
-          assert nav.count('<button') == 5, "Expected exactly 5 mobile navigation items"
+          for token in required:
+              assert token in html, f"Build42 HTML element missing: {token}"
 
           for token in [
-              'WindowInsetsCompat.Type.statusBars()',
-              'WindowInsetsCompat.Type.navigationBars()',
-              'WindowInsetsCompat.Type.displayCutout()',
-              'WindowInsetsCompat.Type.ime()',
-              'Math.max(safe.bottom, ime.bottom)',
+              'class="smartbar"',
+              'class="suggestions"',
+              'data-q=',
           ]:
-              assert token in java, f"Missing WindowInsets handling: {token}"
+              assert token not in html, f"Old search UI still found: {token}"
 
-          assert "versionCode 28" in gradle
-          assert "versionName '1.0.1'" in gradle
+          nav_marker = '<nav aria-label="Glavni meni" class="mobile-bottom-nav">'
+          assert nav_marker in html, "Mobile bottom navigation missing"
+          nav = html.split(nav_marker, 1)[1].split("</nav>", 1)[0]
+          assert nav.count("<button") == 5, "Expected exactly five mobile navigation buttons"
+
+          for token in [
+              "WindowInsetsCompat.Type.statusBars()",
+              "WindowInsetsCompat.Type.navigationBars()",
+              "WindowInsetsCompat.Type.displayCutout()",
+              "WindowInsetsCompat.Type.ime()",
+              "Math.max(safe.bottom, ime.bottom)",
+          ]:
+              assert token in java, f"Android safe-area handling missing: {token}"
+
+          assert "versionCode 28" in gradle, "Unexpected Android versionCode"
+          assert "versionName '1.0.1'" in gradle, "Unexpected Android versionName"
 
           scripts = re.findall(r'<script\b[^>]*>([\s\S]*?)</script\s*>', html, re.I)
-          assert scripts, "No JavaScript blocks found"
+          assert scripts, "No inline JavaScript blocks found"
           for i, script in enumerate(scripts, 1):
               with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as f:
                   f.write(script)
                   name = f.name
               subprocess.run(["node", "--check", name], check=True)
-          print(f"Build42 verification passed: {len(scripts)} JavaScript blocks.")
+
+          print(f"Build42 source checks passed. HTML size: {html_path.stat().st_size} bytes; JS blocks: {len(scripts)}")
           PY
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -87,21 +99,43 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: "8.9"
 
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
+      - name: Clean and build APK
+        run: gradle --no-daemon clean assembleDebug
 
-      - name: Verify APK exists
+      - name: Verify packaged APK contains the exact Build42 HTML
+        shell: bash
         run: |
+          set -euo pipefail
           APK="$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)"
           test -n "$APK"
-          ls -lh "$APK"
+          python3 - "$APK" <<'PY'
+          import hashlib, sys, zipfile
+          from pathlib import Path
+
+          apk = Path(sys.argv[1])
+          source = Path("app/src/main/assets/Tringo.html").read_bytes()
+          with zipfile.ZipFile(apk) as z:
+              names = z.namelist()
+              candidates = [n for n in names if n.endswith("assets/Tringo.html")]
+              assert candidates, "Tringo.html is not packaged inside the APK"
+              packaged = z.read(candidates[0])
+          source_hash = hashlib.sha256(source).hexdigest()
+          apk_hash = hashlib.sha256(packaged).hexdigest()
+          assert source_hash == apk_hash, "APK contains a different/old Tringo.html asset"
+          print("APK asset verification PASSED")
+          print("Source SHA256:", source_hash)
+          print("APK asset SHA256:", apk_hash)
+          print("APK file:", apk)
+          print("APK size:", apk.stat().st_size)
+          PY
           sha256sum "$APK"
 
       - name: Upload Build42 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Tringo-Android-APK-V1.0.1-Build42
+          name: Tringo-Android-V1.0.1-Build42
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          retention-days: 14
