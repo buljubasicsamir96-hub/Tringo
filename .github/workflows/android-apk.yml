@@ -14,26 +14,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Tringo-Android-APK-V1.0.1-Build33
+
+      - name: Verify Build 34 interface and Android safe area
         run: |
           python3 - <<'PY'
           from pathlib import Path
           html = Path("app/src/main/assets/Tringo.html").read_text(encoding="utf-8")
           java = Path("app/src/main/java/ba/tring/tringo/MainActivity.java").read_text(encoding="utf-8")
+          gradle = Path("app/build.gradle").read_text(encoding="utf-8")
 
-          assert 'tringo-android-build32-viewport-fix' in html
+          assert 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover' in html
+          assert 'tringo-build34-welcome-animation' in html
+          assert 'tringoMascotWelcome' in html
+          assert 'tringo-build34-chat-welcome' in html
+          assert 'Dobrodošli! 👋' in html
+          assert 'Kreirao: Samir Buljubašić' in html
+          assert '.chat > .msg:first-child { display:flex!important; }' in html
+          assert 'tringoRunManualSearch' in html
           assert 'mobile-bottom-nav' in html
+          nav = html.split('class="mobile-bottom-nav"', 1)[1].split('</nav>', 1)[0]
+          assert nav.count('<button') == 5, "Expected exactly 5 approved bottom navigation items"
+
           assert 'WindowInsetsCompat.Type.statusBars()' in java
           assert 'WindowInsetsCompat.Type.navigationBars()' in java
+          assert 'WindowInsetsCompat.Type.displayCutout()' in java
           assert 'WindowInsetsCompat.Type.ime()' in java
-          assert 'view.setPadding(safe.left, safe.top, safe.right, bottom)' in java
           assert 'Math.max(safe.bottom, ime.bottom)' in java
-          assert 'tringoRunManualSearch' in html
-
-          nav = html.split('class="mobile-bottom-nav"', 1)[1].split('</nav>', 1)[0]
-          assert nav.count('<button') == 5, "Expected exactly 5 navigation items"
-
-          print("Build 33 verification successful.")
+          assert 'versionCode 28' in gradle
+          print("Build 34 source verification successful.")
           PY
 
       - name: Set up Java 17
@@ -41,26 +49,32 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
       - name: Install Android platform
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
       - name: Build APK
         run: gradle --no-daemon assembleDebug
+
       - name: Verify APK output
         run: |
           test -n "$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)"
           ls -lh app/build/outputs/apk/debug/*.apk
           sha256sum app/build/outputs/apk/debug/*.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Tringo-Android-APK-V1.0.1-Build33
+          name: Tringo-Android-APK-V1.0.1-Build34
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
