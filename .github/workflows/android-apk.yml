@@ -14,9 +14,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Verify Build 33 Android safe areas
+      - name: Tringo-Android-APK-V1.0.1-Build33
         run: |
-         python3 - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
           html = Path("app/src/main/assets/Tringo.html").read_text(encoding="utf-8")
           java = Path("app/src/main/java/ba/tring/tringo/MainActivity.java").read_text(encoding="utf-8")
