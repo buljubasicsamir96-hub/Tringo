@@ -14,8 +14,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply mobile interface update
-        run: python3 scripts/apply-mobile-design-build28.py
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
@@ -41,6 +39,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Tringo-Android-APK-V1.0.1-Build28
+          name: Tringo-Android-APK-V1.0.1-Build31
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
