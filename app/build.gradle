@@ -10,8 +10,8 @@ android {
         versionCode 28
         versionName '1.0.1'
     }
+}
 
-    dependencies {
-        implementation 'androidx.core:core:1.13.1'
-    }
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
 }
